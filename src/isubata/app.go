@@ -452,6 +452,10 @@ func getMessage(c echo.Context) error {
 }
 
 func getUserIdMapByMessages(messages []Message) (map[int64]interface{}, error) {
+	if len(messages) == 0 {
+		return nil, nil
+	}
+
 	userIDs := make([]int, len(messages))
 	for _, v := range messages {
 		userIDs = append(userIDs, int(v.ID))
