@@ -201,6 +201,28 @@ func register(name, password string) (int64, error) {
 	return res.LastInsertId()
 }
 
+// cache
+
+func warmupImageCache() {
+	rows, err := db.Query(`SELECT name, data FROM image`)
+	for rows.Next() {
+		var name string
+		var data []byte
+
+		// Loop all images
+		err = rows.Scan(&name, &data)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// Save to disk
+		go func() {
+			fmt.Println("../public/icons/" + name)
+			ioutil.WriteFile("../public/icons/"+name, data, 0644)
+		}()
+	}
+}
+
 // request handlers
 
 func getInitialize(c echo.Context) error {
@@ -209,6 +231,7 @@ func getInitialize(c echo.Context) error {
 	db.MustExec("DELETE FROM channel WHERE id > 10")
 	db.MustExec("DELETE FROM message WHERE id > 10000")
 	db.MustExec("DELETE FROM haveread")
+	warmupImageCache()
 	return c.String(204, "")
 }
 
