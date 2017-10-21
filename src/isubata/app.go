@@ -96,7 +96,7 @@ type User struct {
 
 func getUser(userID int64) (*User, error) {
 	u := User{}
-	if err := db.Get(&u, "SELECT * FROM user WHERE id = ?", userID); err != nil {
+	if err := db.Get(&u, "SELECT id, name, display_name, avatar_icon FROM user WHERE id = ?", userID); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
