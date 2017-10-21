@@ -210,6 +210,20 @@ func warmupImageCache() {
 		os.Mkdir(path, os.ModePerm)
 	}
 
+	// Delete duplicate images
+	_, err := db.Exec(`
+  DELETE FROM image WHERE id NOT IN (
+    SELECT * FROM (
+      SELECT MIN(id)
+      FROM image
+      GROUP BY name
+    ) x
+  )`)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	// Loop images to cache
 	rows, err := db.Query(`SELECT name, data FROM image`)
 	for rows.Next() {
@@ -693,7 +707,12 @@ func postProfile(c echo.Context) error {
 	}
 
 	if avatarName != "" && len(avatarData) > 0 {
-		_, err := db.Exec("INSERT INTO image (name, data) VALUES (?, ?)", avatarName, avatarData)
+		// Cache icon
+		go func(path string, data []byte) {
+			ioutil.WriteFile(path, data, 0644)
+		}("../public/icons/"+avatarName, avatarData)
+
+		_, err := db.Exec("INSERT INTO image (name, data) SELECT ?, ? FROM image WHERE NOT EXISTS(SELECT id FROM image WHERE name = ?) LIMIT 1", avatarName, avatarData, avatarName)
 		if err != nil {
 			return err
 		}
