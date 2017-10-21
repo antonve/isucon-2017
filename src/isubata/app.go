@@ -707,6 +707,11 @@ func postProfile(c echo.Context) error {
 	}
 
 	if avatarName != "" && len(avatarData) > 0 {
+		// Cache icon
+		go func(path string, data []byte) {
+			ioutil.WriteFile(path, data, 0644)
+		}("../public/icons/"+avatarName, avatarData)
+
 		_, err := db.Exec("INSERT INTO image (name, data) SELECT ?, ? FROM image WHERE NOT EXISTS(SELECT id FROM image WHERE name = ?) LIMIT 1", avatarName, avatarData, avatarName)
 		if err != nil {
 			return err
