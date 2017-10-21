@@ -736,6 +736,7 @@ func getIcon(c echo.Context) error {
 	var name string
 	var data []byte
 	fileName := c.Param("file_name")
+	fmt.Printf("LOADING ICON: %s\n", fileName)
 	err := db.QueryRow("SELECT name, data FROM image WHERE name = ?", fileName).Scan(&name, &data)
 	if err == sql.ErrNoRows {
 		return echo.ErrNotFound
