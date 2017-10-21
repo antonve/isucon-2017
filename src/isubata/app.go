@@ -124,6 +124,7 @@ type Message struct {
 }
 
 func queryMessages(chanID, lastID int64) ([]Message, error) {
+	log.Println(chanID, lastID)
 	msgs := []Message{}
 	err := db.Select(&msgs, "SELECT * FROM message WHERE id > ? AND channel_id = ? ORDER BY id DESC LIMIT 100",
 		lastID, chanID)
@@ -380,16 +381,10 @@ func postMessage(c echo.Context) error {
 	return c.NoContent(204)
 }
 
-func jsonifyMessage(m Message) (map[string]interface{}, error) {
-	u := User{}
-	err := db.Get(&u, "SELECT name, display_name, avatar_icon FROM user WHERE id = ?", m.UserID)
-	if err != nil {
-		return nil, err
-	}
-
+func jsonifyMessage(m Message, idUserMap map[int64]interface{}) (map[string]interface{}, error) {
 	r := make(map[string]interface{})
 	r["id"] = m.ID
-	r["user"] = u
+	r["user"] = idUserMap[m.UserID]
 	r["date"] = m.CreatedAt.Format("2006/01/02 15:04:05")
 	r["content"] = m.Content
 	return r, nil
@@ -409,16 +404,20 @@ func getMessage(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-
 	messages, err := queryMessages(chanID, lastID)
 	if err != nil {
 		return err
+	}
+	idUserMap, e := getUserIdMapByMessages(messages)
+
+	if e != nil {
+		return e
 	}
 
 	response := make([]map[string]interface{}, 0)
 	for i := len(messages) - 1; i >= 0; i-- {
 		m := messages[i]
-		r, err := jsonifyMessage(m)
+		r, err := jsonifyMessage(m, idUserMap)
 		if err != nil {
 			return err
 		}
@@ -436,6 +435,35 @@ func getMessage(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, response)
+}
+
+func getUserIdMapByMessages(messages []Message) (map[int64]interface{}, error) {
+	userIDs := make([]int, len(messages))
+	for _, v := range messages {
+		userIDs = append(userIDs, int(v.ID))
+	}
+
+	users := []User{}
+
+	q, vs, e := sqlx.In("SELECT name, display_name, avatar_icon FROM user WHERE id in (?)", userIDs)
+
+	if e != nil {
+		return nil, e
+	}
+
+	err := db.Select(&users, q, vs...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	idUserMap := make(map[int64]interface{}, 0)
+
+	for _, v := range users {
+		idUserMap[v.ID] = v
+	}
+
+	return idUserMap, nil
 }
 
 func queryChannels() ([]int64, error) {
@@ -552,9 +580,15 @@ func getHistory(c echo.Context) error {
 		return err
 	}
 
+	idUserMap, err := getUserIdMapByMessages(messages)
+
+	if err != nil {
+		return err
+	}
+
 	mjson := make([]map[string]interface{}, 0)
 	for i := len(messages) - 1; i >= 0; i-- {
-		r, err := jsonifyMessage(messages[i])
+		r, err := jsonifyMessage(messages[i], idUserMap)
 		if err != nil {
 			return err
 		}
