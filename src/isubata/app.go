@@ -707,7 +707,6 @@ func getIcon(c echo.Context) error {
 	}
 
 	go func() {
-		log.Println("FileName is ", fileName)
 		ioutil.WriteFile("images/"+fileName, data, 0644)
 	}()
 
