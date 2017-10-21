@@ -204,6 +204,13 @@ func register(name, password string) (int64, error) {
 // cache
 
 func warmupImageCache() {
+	// Create directory
+	path := "../public/icons/"
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, os.ModePerm)
+	}
+
+	// Loop images to cache
 	rows, err := db.Query(`SELECT name, data FROM image`)
 	for rows.Next() {
 		var name string
@@ -217,8 +224,7 @@ func warmupImageCache() {
 
 		// Save to disk
 		go func() {
-			fmt.Println("../public/icons/" + name)
-			ioutil.WriteFile("../public/icons/"+name, data, 0644)
+			ioutil.WriteFile(path+name, data, 0644)
 		}()
 	}
 }
