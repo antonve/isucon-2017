@@ -707,7 +707,7 @@ func postProfile(c echo.Context) error {
 	}
 
 	if avatarName != "" && len(avatarData) > 0 {
-		_, err := db.Exec("INSERT INTO image (name, data) VALUES (?, ?)", avatarName, avatarData)
+		_, err := db.Exec("INSERT INTO image (name, data) SELECT ?, ? FROM image WHERE NOT EXISTS(SELECT id FROM image WHERE name = ?) LIMIT 1", avatarName, avatarData, avatarName)
 		if err != nil {
 			return err
 		}
