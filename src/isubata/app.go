@@ -352,8 +352,7 @@ func postMessage(c echo.Context) error {
 
 func jsonifyMessage(m Message) (map[string]interface{}, error) {
 	u := User{}
-	err := db.Get(&u, "SELECT name, display_name, avatar_icon FROM user WHERE id = ?",
-		m.UserID)
+	err := db.Get(&u, "SELECT name, display_name, avatar_icon FROM user WHERE id = ?", m.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -685,8 +684,9 @@ func postProfile(c echo.Context) error {
 func getIcon(c echo.Context) error {
 	var name string
 	var data []byte
+	fileName := c.Param("file_name")
 	err := db.QueryRow("SELECT name, data FROM image WHERE name = ?",
-		c.Param("file_name")).Scan(&name, &data)
+		fileName).Scan(&name, &data)
 	if err == sql.ErrNoRows {
 		return echo.ErrNotFound
 	}
@@ -705,6 +705,12 @@ func getIcon(c echo.Context) error {
 	default:
 		return echo.ErrNotFound
 	}
+
+	go func() {
+		log.Println("FileName is ", fileName)
+		ioutil.WriteFile("images/"+fileName, data, 0644)
+	}()
+
 	return c.Blob(http.StatusOK, mime, data)
 }
 
