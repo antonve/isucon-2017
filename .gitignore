@@ -3,3 +3,5 @@
 /src/isubata/vendor
 /.idea/*
 !.gitkeep
+/images/*.png
+/images/*.jpg
