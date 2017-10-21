@@ -125,7 +125,7 @@ type Message struct {
 
 func queryMessages(chanID, lastID int64) ([]Message, error) {
 	msgs := []Message{}
-	err := db.Select(&msgs, "SELECT * FROM message WHERE id > ? AND channel_id = ? ORDER BY id DESC LIMIT 100",
+	err := db.Select(&msgs, "SELECT channel_id, user_id, content, created_at FROM message WHERE id > ? AND channel_id = ? ORDER BY id DESC LIMIT 100",
 		lastID, chanID)
 	return msgs, err
 }
@@ -456,14 +456,14 @@ func getUserIdMapByMessages(messages []Message) (map[int64]interface{}, error) {
 		return nil, nil
 	}
 
-	userIDs := make([]int, len(messages))
+	userIDs := make([]int, 0)
 	for _, v := range messages {
-		userIDs = append(userIDs, int(v.ID))
+		userIDs = append(userIDs, int(v.UserID))
 	}
 
 	users := []User{}
 
-	q, vs, e := sqlx.In("SELECT name, display_name, avatar_icon FROM user WHERE id in (?)", userIDs)
+	q, vs, e := sqlx.In("SELECT id, name, display_name, avatar_icon FROM user WHERE id in (?)", userIDs)
 
 	if e != nil {
 		return nil, e
