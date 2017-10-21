@@ -221,11 +221,12 @@ func warmupImageCache() {
 		if err != nil {
 			fmt.Println(err)
 		}
+		if _, err := os.Stat(path + name); !os.IsNotExist(err) {
+			continue
+		}
 
 		// Save to disk
-		go func() {
-			ioutil.WriteFile(path+name, data, 0644)
-		}()
+		ioutil.WriteFile(path+name, data, 0644)
 	}
 }
 
