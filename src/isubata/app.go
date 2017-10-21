@@ -530,7 +530,7 @@ func getHistory(c echo.Context) error {
 		}
 	}
 
-	const N = 20
+	const N = 10
 	var cnt int64
 	err = db.Get(&cnt, "SELECT COUNT(*) as cnt FROM message WHERE channel_id = ?", chID)
 	if err != nil {
@@ -546,7 +546,7 @@ func getHistory(c echo.Context) error {
 
 	messages := []Message{}
 	err = db.Select(&messages,
-		"SELECT * FROM message WHERE channel_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
+		"SELECT channel_id, content FROM message WHERE channel_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
 		chID, N, (page-1)*N)
 	if err != nil {
 		return err
