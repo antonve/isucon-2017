@@ -210,6 +210,20 @@ func warmupImageCache() {
 		os.Mkdir(path, os.ModePerm)
 	}
 
+	// Delete duplicate images
+	_, err := db.Exec(`
+  DELETE FROM image WHERE id NOT IN (
+    SELECT * FROM (
+      SELECT MIN(id)
+      FROM image
+      GROUP BY name
+    ) x
+  )`)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	// Loop images to cache
 	rows, err := db.Query(`SELECT name, data FROM image`)
 	for rows.Next() {
