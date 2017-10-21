@@ -736,10 +736,6 @@ func getIcon(c echo.Context) error {
 		return echo.ErrNotFound
 	}
 
-	go func() {
-		ioutil.WriteFile("../public/icons/"+fileName, data, 0644)
-	}()
-
 	return c.Blob(http.StatusOK, mime, data)
 }
 
