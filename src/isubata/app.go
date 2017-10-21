@@ -627,6 +627,8 @@ func getAddChannel(c echo.Context) error {
 	})
 }
 
+var insertChannelStmt *sqlx.Stmt
+
 func postAddChannel(c echo.Context) error {
 	self, err := ensureLogin(c)
 	if self == nil {
@@ -639,12 +641,11 @@ func postAddChannel(c echo.Context) error {
 		return ErrBadReqeust
 	}
 
-	res, err := db.Exec(
-		"INSERT INTO channel (name, description, updated_at, created_at) VALUES (?, ?, NOW(), NOW())",
-		name, desc)
-	if err != nil {
-		return err
+	if insertChannelStmt == nil {
+		insertChannelStmt, _ = db.Preparex("INSERT INTO channel (name, description, updated_at, created_at) VALUES (?, ?, NOW(), NOW())")
 	}
+
+	res := insertChannelStmt.MustExec(name, desc)
 	lastID, _ := res.LastInsertId()
 	return c.Redirect(http.StatusSeeOther,
 		fmt.Sprintf("/channel/%v", lastID))
